@@ -1,11 +1,12 @@
 package com.allura.literalura.principal;
 
-import com.allura.literalura.model.Autor;
-import com.allura.literalura.model.Datos;
-import com.allura.literalura.model.DatosLibros;
-import com.allura.literalura.model.Libros;
+import com.allura.literalura.model.*;
+import com.allura.literalura.repository.AutorRepository;
+import com.allura.literalura.repository.LibrosRepository;
 import com.allura.literalura.service.ConsumoAPI;
 import com.allura.literalura.service.ConvierteDatos;
+import jakarta.persistence.Id;
+import org.yaml.snakeyaml.events.Event;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -16,6 +17,14 @@ public class Principal {
     private final String URL_BASE = "https://gutendex.com/books/";
     private ConvierteDatos conversor = new ConvierteDatos();
     private List<DatosLibros> datosLibros=new ArrayList<>();
+    private LibrosRepository librosRepository;
+    private AutorRepository autorRepository;
+
+    public Principal(LibrosRepository librosRepository, AutorRepository autorrepository) {
+        this.librosRepository= librosRepository;
+        this.autorRepository = autorrepository;
+    }
+
 
     public void muestraElMenu() {
         var opcion= -1;
@@ -38,19 +47,19 @@ public class Principal {
                     buscarLibroPorTitulo();
                     break;
                 case 2:
-                    listarLibros();
+                    listarLibros();//de  la base de datos
                     break;
                 case 3:
-                    listarAutores();
+                    listarAutores();//de  la base de datos
                     break;
                 case 4:
-                    ListarAutoresVivos();
+                    ListarAutoresVivos();//de  la base de datos
                     break;
                 case 5:
-                    listarLibrosPorIdioma();
+                    listarLibrosPorIdioma();//de  la base de datos
                     break;
                 case 6:
-                    mostrarLibrosBuscados();
+                    mostrarLibrosBuscados();//de  la base de datos
                     break;
                 case 0:
                     System.out.println("Cerrando la aplicacion...");
@@ -64,7 +73,7 @@ public class Principal {
             System.out.println("Por favor escribe el nombre del libro que deseas buscar");
             var nombreLibro = teclado.nextLine();
             var json = consumoApi.obtenerDatos(URL_BASE + "?search=" + nombreLibro.replace(" ", "+"));
-            System.out.println(json);
+            //System.out.println(json);
             Datos datos = conversor.obtenerDatos(json, Datos.class); // Cambiado a Datos.class para manejar la respuesta completa
             if (datos != null && !datos.datosLibros().isEmpty()) {
                 return datos.datosLibros().get(0); // Retorna el primer libro encontrado
@@ -75,18 +84,31 @@ public class Principal {
 
         }
 
+    private void buscarLibroPorTitulo() {
+        DatosLibros datos = getDatosLibros(); // Obtener los datos del libro
+        if (datos != null && !datos.datosAutor().isEmpty()) {
+            // Obtener el primer autor de la lista de autores
+            DatosAutor datosAutor = datos.datosAutor().get(0);
 
+            // Buscar el autor en la base de datos usando su nombre
+            Autor autor = autorRepository.findByNombre(datosAutor.nombre());
 
+            // Si no se encuentra el autor, lo creamos y lo guardamos
+            if (autor == null) {
+                autor = new Autor(datosAutor);  // Crear un nuevo autor con los datos del autor
+                autorRepository.save(autor); // Guardar el autor en la base de datos
+            }
 
-         private void buscarLibroPorTitulo() {
-           DatosLibros datos= getDatosLibros();
-           if (datos!=null){
-            datosLibros.add(datos);
-            System.out.println(datos);
-          }
+            // Crear el libro y asociarlo al autor
+            Libros libros = new Libros(datos); // Crear libro a partir de los datos
+            libros.setAutor(autor); // Establecer el autor en el libro
+
+            // Guardar el libro en la base de datos
+            librosRepository.save(libros);
+
+            System.out.println(libros); // Mostrar los datos del libro
         }
-
-
+    }
 
     private void listarLibrosPorIdioma() {
     }
@@ -100,11 +122,11 @@ public class Principal {
     }
 
     private void mostrarLibrosBuscados() {
-        List<Libros> libros= new ArrayList<>();
-        libros = datosLibros.stream()
+        List<Libros> librosBuscados= new ArrayList<>();
+        librosBuscados = datosLibros.stream()
                 .map(d-> new Libros(d))
                 .collect(Collectors.toList());
-        libros.stream()
+        librosBuscados.stream()
                 .sorted(Comparator.comparing(Libros::getDowloads))
                 .forEach(System.out::println);
 
@@ -113,6 +135,21 @@ public class Principal {
 
 
 }
+
+//         private void buscarLibroPorTitulo() {
+//           DatosLibros datos= getDatosLibros();
+//           if (datos!=null){
+//           //datosLibros.add(datos);
+//           Libros libros= new Libros(datos);
+//           Autor autor=new Autor(datos);
+//           librosRepository.save(libros);
+//           //autorRepository.save(autor);
+//            System.out.println(datos);
+//          }
+//        }
+
+
+
 //        // Lista inicial de libros obtenida del JSON
 //        List<DatosLibros> datosLibrosList = datos.datosLibros().stream()
 //                .filter(Objects::nonNull) // Opcional: filtra para omitir elementos nulos
@@ -151,17 +188,7 @@ public class Principal {
 ////                .filter(libro -> libro.datosAutor().stream()   // Para cada libro, verifica la lista de autores
 ////                        .anyMatch(autor -> autor.aMuerte() != null && autor.aMuerte() < aMuerte)) // Compara el año de muerte
 ////                .collect(Collectors.toList());
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//    }
+////    }
 //
 //
 
