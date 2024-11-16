@@ -67,9 +67,6 @@ public class Principal {
             }
         }
 
-
-
-
         private DatosLibros getDatosLibros(){
             System.out.println("Por favor escribe el nombre del libro que deseas buscar");
             var nombreLibro = teclado.nextLine();
