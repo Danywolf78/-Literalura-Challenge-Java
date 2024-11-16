@@ -17,16 +17,16 @@ public class Autor {
     private Integer aNacimiento;
     private Integer aMuerte;
     @OneToMany(mappedBy = "autor", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    //@OneToMany(mappedBy = "autor")
+
     private List<Libros> libros;
 
 
     public Autor() {}
-
-    public List<Libros> getLibros(List<Libros> libros) {
-        libros.forEach(l -> l.setAutor(this));
+    public List<Libros> getLibros() {
         return libros;
     }
+
+
 
     public void setLibros(List<Libros> libros) {
         this.libros = libros;

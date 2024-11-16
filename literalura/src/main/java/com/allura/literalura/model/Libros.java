@@ -12,6 +12,7 @@ public class Libros {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long Id;
     //@Column(unique=true)
+    @Column(length = 500)
     private String titulo;
     private Boolean copyright;
     @ManyToOne
@@ -35,6 +36,9 @@ public class Libros {
 
     }
 
+    public Autor getAutor() {
+        return autor;
+    }
 
     public void setAutor(Autor autor) {
         this.autor = autor;

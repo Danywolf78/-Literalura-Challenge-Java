@@ -6,6 +6,7 @@ import com.allura.literalura.repository.LibrosRepository;
 import com.allura.literalura.service.ConsumoAPI;
 import com.allura.literalura.service.ConvierteDatos;
 import jakarta.persistence.Id;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.yaml.snakeyaml.events.Event;
 
 import java.util.*;
@@ -17,6 +18,7 @@ public class Principal {
     private final String URL_BASE = "https://gutendex.com/books/";
     private ConvierteDatos conversor = new ConvierteDatos();
     private List<DatosLibros> datosLibros=new ArrayList<>();
+    @Autowired
     private LibrosRepository librosRepository;
     private AutorRepository autorRepository;
 
@@ -27,47 +29,46 @@ public class Principal {
 
 
     public void muestraElMenu() {
-        var opcion= -1;
-        while(opcion !=0){
-            var menu= """
-                    1- Buscar libro por título
-                    2- Listar libros registrados
-                    3- Listar autores registrados
-                    4- Listar autores vivos en un determinado año
-                    5- Listar libros por idioma
-                    6- Mostrar libros buscados
-                    0- Salir
-                    
-                    """;
-            System.out.println(menu);
-            opcion =teclado.nextInt();
-            teclado.nextLine();
-            switch (opcion ){
-                case 1:
-                    buscarLibroPorTitulo();
-                    break;
-                case 2:
-                    listarLibros();//de  la base de datos
-                    break;
-                case 3:
-                    listarAutores();//de  la base de datos
-                    break;
-                case 4:
-                    ListarAutoresVivos();//de  la base de datos
-                    break;
-                case 5:
-                    listarLibrosPorIdioma();//de  la base de datos
-                    break;
-                case 6:
-                    mostrarLibrosBuscados();//de  la base de datos
-                    break;
-                case 0:
-                    System.out.println("Cerrando la aplicacion...");
-                    break;
-                default:
-                    System.out.println("Opción inválida");
+            var opcion = -1; // Opción inicializada
+            while (opcion != 0) {
+
+                var menu = """
+                1- Buscar libro por título
+                2- Listar libros registrados
+                3- Listar autores registrados
+                4- Listar autores vivos en un determinado año
+                5- Listar libros por idioma
+                6- Mostrar libros buscados
+                0- Salir
+                
+                """;
+                System.out.println(menu);
+
+                // Validar entrada del usuario
+                if (teclado.hasNextInt()) {
+                    opcion = teclado.nextInt();
+                    teclado.nextLine();
+
+                    // Procesar la opción ingresada
+                    switch (opcion) {
+                        case 1 -> buscarLibroPorTitulo();
+                        case 2 -> listarLibros();
+                        case 3 -> listarAutores();
+                        case 4 -> ListarAutoresVivos();
+                        case 5 -> listarLibrosPorIdioma();
+                        case 6 -> mostrarLibrosBuscados();
+                        case 0 -> System.out.println("Cerrando la aplicación...");
+                        default -> System.out.println("Opción inválida. Intenta nuevamente.");
+                    }
+                } else {
+                    System.out.println("❌ Entrada inválida. Por favor, ingresa un número.");
+                    teclado.nextLine();
+                }
             }
-        } }
+        }
+
+
+
 
         private DatosLibros getDatosLibros(){
             System.out.println("Por favor escribe el nombre del libro que deseas buscar");
@@ -90,18 +91,18 @@ public class Principal {
             // Obtener el primer autor de la lista de autores
             DatosAutor datosAutor = datos.datosAutor().get(0);
 
-            // Buscar el autor en la base de datos usando su nombre
+            // Buscar el autor en la base de datos
             Autor autor = autorRepository.findByNombre(datosAutor.nombre());
 
             // Si no se encuentra el autor, lo creamos y lo guardamos
             if (autor == null) {
-                autor = new Autor(datosAutor);  // Crear un nuevo autor con los datos del autor
-                autorRepository.save(autor); // Guardar el autor en la base de datos
+                autor = new Autor(datosAutor);  // Crear un nuevo autor
+                autorRepository.save(autor); // Guardar el autor
             }
 
-            // Crear el libro y asociarlo al autor
-            Libros libros = new Libros(datos); // Crear libro a partir de los datos
-            libros.setAutor(autor); // Establecer el autor en el libro
+            // Crear el libro y asocia al autor
+            Libros libros = new Libros(datos);
+            libros.setAutor(autor);
 
             // Guardar el libro en la base de datos
             librosRepository.save(libros);
@@ -111,128 +112,152 @@ public class Principal {
     }
 
     private void listarLibrosPorIdioma() {
+        System.out.println("""
+                --------------------------------
+                 📘 LISTAR LIBROS POR IDIOMA 📘
+                --------------------------------
+                """);
+        var menu = """
+                   
+                    Seleccione el numero correespondiente al idioma del libro que desea encontrar:
+                    ---------------------------------------------------
+                    1 - Español
+                    2 - Francés
+                    3 - Inglés
+                    4 - Portugués
+                    5 - Italiano
+                    
+                    """;
+        System.out.println(menu);
+
+        try {
+            var opcion = Integer.parseInt(teclado.nextLine());
+
+            switch (opcion) {
+                case 1:
+                    buscarLibrosPorIdioma("es");
+                    break;
+                case 2:
+                    buscarLibrosPorIdioma("fr");
+                    break;
+                case 3:
+                    buscarLibrosPorIdioma("en");
+                    break;
+                case 4:
+                    buscarLibrosPorIdioma("pt");
+                    break;
+                case 5:
+                   buscarLibrosPorIdioma("it");
+                break;
+                default:
+                    System.out.println("Opción inválida!");
+                    break;
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("Opción no válida: " + e.getMessage());
+        }
+    }
+    private void buscarLibrosPorIdioma(String idioma) {
+
+        try {
+            Idioma idiomaEnum =  Idioma.fromString(idioma);
+
+            // Usamos el repositorio para buscar los libros por idioma
+            List<Libros> libros = librosRepository.buscarLibrosPorIdioma(idiomaEnum);
+            if (libros.isEmpty()) {
+                System.out.println("No hay libros registrados en ese idioma");
+            } else {
+                System.out.println();
+                libros.forEach(l -> System.out.println(
+                        "----------- LIBRO \uD83D\uDCD9  --------------" +
+                                "\nTítulo: " + l.getTitulo() +
+                                "\nAutor: " + l.getAutor().getNombre() +
+                                "\nIdioma: " + l.getIdioma() +
+                                "\nNúmero de descargas: " + l.getDowloads() +
+                                "\n----------------------------------------\n"
+                ));
+            }
+        } catch (IllegalArgumentException e) {
+            System.out.println("Introduce un idioma válido en el formato especificado.");
+        }
     }
 
+
     private void ListarAutoresVivos() {
+        System.out.println("""
+                    -----------------------------
+                      📒 LISTAR AUTORES VIVOS 📒
+                    -----------------------------
+                     """);
+        System.out.println("Introduzca un año para mostrar autor(es) vivos antes del ese año dado:");
+        try {
+            var fecha = Integer.valueOf(teclado.nextLine());
+            List<Autor> autores = autorRepository.buscarAutoresVivos(fecha);
+            if (!autores.isEmpty()) {
+                System.out.println();
+                autores.forEach(a -> System.out.println(
+                        "Autor: " + a.getNombre() +
+                                "\nFecha de Nacimiento: " + a.getaNacimiento() +
+                                "\nFecha de Fallecimiento: " + a.getaMuerte() +
+                                "\nLibros: " + a.getLibros().stream()
+                                .map(l -> l.getTitulo()).collect(Collectors.toList()) + "\n"
+                ));
+            } else {
+                System.out.println("No hay autor(es) vivos antes del año registrado");
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("Ingresa un año válido " + e.getMessage());
+        }
     }
 
     private void listarAutores() {
+        System.out.println("""
+                  LISTAR AUTORES REGISTRADOS 📕
+                                      """);
+        List<Autor> autores = autorRepository.findAll();
+        System.out.println();
+        autores.forEach(l -> System.out.println(
+                "Autor: " + l.getNombre() +
+                        "\nFecha de Nacimiento: " + l.getaNacimiento() +
+                        "\nFecha de Fallecimiento: " + l.getaMuerte() +
+                        "\nLibros: " + l.getLibros().stream()
+                        .map(t -> t.getTitulo()).collect(Collectors.toList()) + "\n"
+        ));
     }
+
     private void listarLibros() {
+        System.out.println("""
+                  📕 LISTAR LIBROS REGISTRADOS 📕
+                                      """);
+        List<Libros> libros = librosRepository.listarLibros();
+        libros.forEach(l -> System.out.println(
+                "-------------- 📕 LIBRO  -----------------" +
+                        "\nTítulo: " + l.getTitulo() +
+                        "\nAutor: " + l.getAutor().getNombre() +
+                        "\nIdioma: " + l.getIdioma() +
+                        "\nNúmero de descargas: " + l.getDowloads() +
+                        "\n----------------------------------------\n"
+        ));
     }
+
 
     private void mostrarLibrosBuscados() {
-        List<Libros> librosBuscados= new ArrayList<>();
-        librosBuscados = datosLibros.stream()
-                .map(d-> new Libros(d))
-                .collect(Collectors.toList());
-        librosBuscados.stream()
-                .sorted(Comparator.comparing(Libros::getDowloads))
-                .forEach(System.out::println);
+
+            System.out.println("Libros ordenados por descargas:");
+            librosRepository.findAll()
+                    .stream()
+                    .sorted(Comparator.comparing(Libros::getDowloads).reversed()) // Orden por descargas.
+                    .forEach(System.out::println); // Mostrar libros.
+        }
+
+
+
+
+
+
 
 
     }
-
-
-}
-
-//         private void buscarLibroPorTitulo() {
-//           DatosLibros datos= getDatosLibros();
-//           if (datos!=null){
-//           //datosLibros.add(datos);
-//           Libros libros= new Libros(datos);
-//           Autor autor=new Autor(datos);
-//           librosRepository.save(libros);
-//           //autorRepository.save(autor);
-//            System.out.println(datos);
-//          }
-//        }
-
-
-
-//        // Lista inicial de libros obtenida del JSON
-//        List<DatosLibros> datosLibrosList = datos.datosLibros().stream()
-//                .filter(Objects::nonNull) // Opcional: filtra para omitir elementos nulos
-//                .collect(Collectors.toList());
-//        // Convierte `DatosLibros` en `Libros` y guarda en una nueva lista
-//        List<Libros> librosList = datosLibrosList.stream()
-//                .map(d -> new Libros(d.Id(), d.titulo(),d.datosAutor(), d.idioma(), d.copyright(),d.dowloads()))
-//                .collect(Collectors.toList());
-//
-//
-//        // Muestra el título de cada libro
-//        //datosLibrosList.forEach(libro -> System.out.println(libro.titulo()));
-//
-//
-//        // Opcional: muestra cada libro convertido
-//         librosList.forEach(System.out::println);
-//        //librosList.forEach(libro -> System.out.println(libro));
-//
-//        //Busqueda de libros a partir de x año
-//        System.out.println("Por favor indica el año a partirdel cual  deseas ver el autor");
-//        var aMuerte= teclado.nextInt();
-//        teclado.nextLine();
-//        librosList.stream()
-//                .filter(libro -> libro.getDatosAutor().stream()
-//                        .anyMatch(autor -> autor.aMuerte() != null && autor.aMuerte() > aMuerte))
-//                .forEach(libro -> {
-//                    System.out.println("Nombre del Libro: " + libro.getTitulo());
-//                    libro.getDatosAutor().forEach(autor ->
-//                            System.out.println("Autor: " + autor.nombre() + ", Año de Muerte: " + autor.aMuerte())
-//                    );
-//                });
-//
-//
-////        List<DatosLibros> librosFiltrados = datos.datosLibros().stream()
-////                .filter(libro -> libro.datosAutor() != null)  // Filtra libros sin autores
-////                .filter(libro -> libro.datosAutor().stream()   // Para cada libro, verifica la lista de autores
-////                        .anyMatch(autor -> autor.aMuerte() != null && autor.aMuerte() < aMuerte)) // Compara el año de muerte
-////                .collect(Collectors.toList());
-////    }
-//
-//
-
-//
-//        List<DatosLibros> top5Libros = libros.stream()
-//                .filter(Objects::nonNull) // Filtrar nulos si es necesario
-//                .sorted(Comparator.comparing(DatosLibros::Dowloads).reversed()) // Ordenar por descargas en orden descendente
-//                .limit(5) // Tomar los primeros 5
-//                .collect(Collectors.toList());
-//        top5Libros.forEach(libro ->
-//                System.out.println("Título: " + libro.titulo() + ", Descargas: " + libro.Dowloads())
-//        );
-
-//        if (datos != null && datos.datosLibros() != null && !datos.datosLibros().isEmpty()) {
-//            List<DatosLibros> libros = new ArrayList<>();
-//
-//            // Verifica si el tamaño es correcto y recorre
-//            for (int i = 0; i < datos.datosLibros().size(); i++) {
-//                DatosLibros libro = datos.datosLibros().get(i);
-//                if (libro != null) {
-//                    libros.add(libro);
-//                }
-//            }
-////            // Mostrar los libros
-//            //libros.forEach(libro -> System.out.println(libro));
-        //Mostrar solo el titulo de los libros
-//            System.out.println("Títulos de los libros:");
-//            libros.forEach(libro -> System.out.println(libro.titulo()));
-        //Convertir todas las infornaciones a una lista del tipo datos Episodios
-
-//
-//        } else {
-//            System.out.println("No se encontraron libros con ese nombre.");
-//        }
-//    }
-
-
-
-
-
-
-
-
-
 
 
 
