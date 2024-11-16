@@ -25,11 +25,13 @@ información de libros a través de una API y realizar búsquedas en una base de
    ```
     https://github.com/Danywolf78/-Literalura-Challenge-Java
    ```
-
 2. **Configura la base de datos**:
    - Crea una base de datos en PostgreSQL (ej. mdleo_literalura).
    - Configura `application.properties` con tus Datos.     
-
+3. **Ejecuta la aplicación**:
+   
+   - `mvn spring-boot:run`
+   
 
 ## Uso
 
